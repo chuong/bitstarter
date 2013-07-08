@@ -85,7 +85,6 @@ if(require.main == module) {
         .parse(process.argv);
     if (program.url) {
 	var urlstr = program.url.toString();
-	console.log('open ' + urlstr); 
 	var response2console = buildfn(URLFILE_DEFAULT, program.checks);
 	rest.get(urlstr).on('complete', response2console);
     } else {
