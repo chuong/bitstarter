@@ -3,7 +3,6 @@
 Automatically grade files for the presence of specified HTML tags/attributes.
 Uses commander.js and cheerio. Teaches command line application development
 and basic DOM parsing.
-
 References:
 
  + cheerio
@@ -26,6 +25,8 @@ var program = require('commander');
 var cheerio = require('cheerio');
 var HTMLFILE_DEFAULT = "index.html";
 var CHECKSFILE_DEFAULT = "checks.json";
+var rest = require('restler');
+var URLFILE_DEFAULT = "url.html";
 
 var assertFileExists = function(infile) {
     var instr = infile.toString();
@@ -61,14 +62,37 @@ var clone = function(fn) {
     return fn.bind({});
 };
 
+var buildfn = function(htmlfile, checkfile) {
+    var response2console = function(result, response) {
+        if (result instanceof Error) {
+            console.error('Error: ' + util.format(response.message));
+        } else {
+            fs.writeFileSync(htmlfile, result);
+            var checkJson = checkHtmlFile(htmlfile, checkfile);
+            var outJson = JSON.stringify(checkJson, null, 4);
+            console.log(outJson);
+        }
+    };
+    return response2console;
+};
+
+
 if(require.main == module) {
     program
         .option('-c, --checks <check_file>', 'Path to checks.json', clone(assertFileExists), CHECKSFILE_DEFAULT)
         .option('-f, --file <html_file>', 'Path to index.html', clone(assertFileExists), HTMLFILE_DEFAULT)
+        .option('-u, --url <URL_address>', 'URL address')
         .parse(process.argv);
-    var checkJson = checkHtmlFile(program.file, program.checks);
-    var outJson = JSON.stringify(checkJson, null, 4);
-    console.log(outJson);
+    if (program.url) {
+	var urlstr = program.url.toString();
+	console.log('open ' + urlstr); 
+	var response2console = buildfn(URLFILE_DEFAULT, program.checks);
+	rest.get(urlstr).on('complete', response2console);
+    } else {
+	var checkJson = checkHtmlFile(program.file, program.checks);
+	var outJson = JSON.stringify(checkJson, null, 4);
+	console.log(outJson);
+    }
 } else {
     exports.checkHtmlFile = checkHtmlFile;
 }
